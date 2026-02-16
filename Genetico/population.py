@@ -84,9 +84,7 @@ class Population:
     
     @classmethod
     def cargar_poblacion_preentrenada(cls, archivo_preentrenado, tamano_poblacion, limite_parametros, 
-                                  n_betas=5, n_gammas=5,
-                                  ajustar_beta_gamma=True, ajustar_ignicion=True,
-                                  verbose=False):
+                                    num_combustibles=5, ajustar_beta_gamma=True, ajustar_ignicion=True, verbose=False):
         """Carga una población preentrenada desde un CSV"""
 
         if verbose:
@@ -109,9 +107,9 @@ class Population:
                         x = int(float(row['x'])); y = int(float(row['y']))
 
                     if ajustar_beta_gamma and 'beta_1' in row: # Exp3
-                        betas = cp.array([float(row[f'beta_{i}']) for i in range(1, n_betas+1)],
+                        betas = cp.array([float(row[f'beta_{i}']) for i in range(1, num_combustibles+1)],
                                         dtype=cp.float32)
-                        gammas = cp.array([float(row[f'gamma_{i}']) for i in range(1, n_gammas+1)],
+                        gammas = cp.array([float(row[f'gamma_{i}']) for i in range(1, num_combustibles+1)],
                                         dtype=cp.float32)
                     elif ajustar_beta_gamma and 'beta' in row: # Exp2
                         betas = cp.array(float(row['beta']), dtype=cp.float32)
@@ -182,7 +180,7 @@ class Population:
             print(f"[DEBUG] Población final: {len(poblacion_cargada)} individuos.")
         return cls.from_results(poblacion_cargada, ajustar_beta_gamma, ajustar_ignicion)
 
-    def guardar_resultados(self, resultados_dir, gen, n_betas=5, n_gammas=5, 
+    def guardar_resultados(self, resultados_dir, gen, num_combustibles=5, 
                        ajustar_beta_gamma=True, ajustar_ignicion=True,
                        verbose=False):
         """Guarda resultados en un archivo CSV"""
@@ -197,8 +195,8 @@ class Population:
                         + ['fitness']
         elif ajustar_beta_gamma and not ajustar_ignicion:  # Exp3
             fieldnames = ['D', 'A', 'B'] \
-                        + [f'beta_{i}' for i in range(1, n_betas+1)] \
-                        + [f'gamma_{i}' for i in range(1, n_gammas+1)] \
+                        + [f'beta_{i}' for i in range(1, num_combustibles+1)] \
+                        + [f'gamma_{i}' for i in range(1, num_combustibles+1)] \
                         + ['fitness']
         else:                                                      # Exp1
             fieldnames = ['D', 'A', 'B', 'x', 'y'] + ['fitness'] 

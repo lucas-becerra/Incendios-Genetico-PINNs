@@ -7,7 +7,7 @@ from lectura_datos import leer_incendio_referencia
 
 class GeneticAlgorithm:
     def __init__(self, tamano_poblacion, generaciones, limite_parametros, ruta_incendio_referencia, ctx,
-                 archivo_preentrenado=None, generacion_preentrenada=0, num_steps=10000, batch_size=10,
+                 archivo_preentrenado=None, generacion_preentrenada=0, num_steps=10000, batch_size=10, num_combustibles = 5,
                  ajustar_beta_gamma=True, beta_fijo=None, gamma_fijo=None, ajustar_ignicion=True,
                  ignicion_fija_x=None, ignicion_fija_y=None, verbose=False):
         
@@ -20,6 +20,7 @@ class GeneticAlgorithm:
         self.generacion_preentrenada = generacion_preentrenada
         self.num_steps = num_steps
         self.batch_size = batch_size
+        self.num_combustibles = num_combustibles
         self.ajustar_beta_gamma=ajustar_beta_gamma
         self.beta_fijo=beta_fijo
         self.gamma_fijo=gamma_fijo
@@ -44,6 +45,7 @@ class GeneticAlgorithm:
                 self.archivo_preentrenado, 
                 self.tamano_poblacion, 
                 self.limite_parametros,
+                num_combustibles=self.num_combustibles,
                 ajustar_beta_gamma=self.ajustar_beta_gamma, 
                 ajustar_ignicion=self.ajustar_ignicion,
                 verbose=self.verbose
@@ -153,9 +155,10 @@ class GeneticAlgorithm:
                     print(f"Individuo {i}: {ind.as_dict(self.ajustar_beta_gamma, self.ajustar_ignicion)}")
             
             poblacion.guardar_resultados(resultados_dir, gen - 1 + self.generacion_preentrenada,
-                               ajustar_beta_gamma=self.ajustar_beta_gamma, 
-                               ajustar_ignicion=self.ajustar_ignicion,
-                               verbose=self.verbose)
+                                    num_combustibles=self.num_combustibles,
+                                    ajustar_beta_gamma=self.ajustar_beta_gamma, 
+                                    ajustar_ignicion=self.ajustar_ignicion,
+                                    verbose=self.verbose)
             
         if self.verbose:
             print(f"Resultados guardados en: {resultados_dir}")
@@ -164,12 +167,12 @@ class GeneticAlgorithm:
 ############################## ALGORITMO GENÉTICO #########################################################
 
 def genetic_algorithm(tamano_poblacion, generaciones, limite_parametros, ruta_incendio_referencia, ctx,
-                 archivo_preentrenado=None, generacion_preentrenada=0, num_steps=10000, batch_size=10,
+                 archivo_preentrenado=None, generacion_preentrenada=0, num_steps=10000, batch_size=10, num_combustibles=5,
                  ajustar_beta_gamma=True, beta_fijo=None, gamma_fijo=None, ajustar_ignicion=True,
                  ignicion_fija_x=None, ignicion_fija_y=None, verbose=False):
     
     ga = GeneticAlgorithm(tamano_poblacion, generaciones, limite_parametros, ruta_incendio_referencia, ctx,
-                 archivo_preentrenado, generacion_preentrenada, num_steps, batch_size,
+                 archivo_preentrenado, generacion_preentrenada, num_steps, batch_size, num_combustibles,
                  ajustar_beta_gamma, beta_fijo, gamma_fijo, ajustar_ignicion,
                  ignicion_fija_x, ignicion_fija_y, verbose)
     

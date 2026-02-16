@@ -71,9 +71,13 @@ elif exp == 2:
 elif exp == 3:
     ajustar_beta_gamma = True
     ajustar_ignicion = False
+    
+    if incendio_real:
+        num_combustibles = 4
 
-    limite_beta = [(0.01, 5.0)] * 5
-    limite_gamma = [(0.01, 5.0)] * 5
+    limite_beta = [(0.01, 5.0)] * num_combustibles
+    limite_gamma = [(0.01, 5.0)] * num_combustibles
+    
     limite_parametros = limite_parametros_base + limite_beta + limite_gamma
 
     if incendio_real:
@@ -102,6 +106,7 @@ resultados = genetic_algorithm(
     generacion_preentrenada=generacion_preentranada,
     num_steps=500,
     batch_size=5,
+    num_combustibles=5,
     ajustar_beta_gamma=ajustar_beta_gamma,
     beta_fijo=beta_fijo if not ajustar_beta_gamma else None,
     gamma_fijo=gamma_fijo if not ajustar_beta_gamma else None,
