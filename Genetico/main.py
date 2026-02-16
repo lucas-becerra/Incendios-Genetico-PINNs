@@ -14,9 +14,8 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--exp", type=int, default=1, help="Número de experimento")
 parser.add_argument("--pretrained", type=str, default=None, help="Ruta al archivo preentrenado")
 parser.add_argument("--start_gen", type=int, default=0, help="Generación desde la que entrenar")
+parser.add_argument("--ruta_incendio_referencia", type=str, default=None, help="Ruta al incendio de referencia")
 args = parser.parse_args()
-
-exp = args.exp
 
 ############################## CARGADO DE MAPAS #######################################################
 
@@ -28,26 +27,28 @@ h_dy_mapa = ctx.h_dy
 
 ############################## INCENDIO DE REFERENCIA ####################################################
 
-# directorio del archivo actual (Genetico/)
-BASE_DIR = Path(__file__).resolve().parent
+# # directorio del archivo actual (Genetico/)
+# BASE_DIR = Path(__file__).resolve().parent
 
-# directorio padre (raíz del proyecto)
-PROJECT_DIR = BASE_DIR.parent
+# # directorio padre (raíz del proyecto)
+# PROJECT_DIR = BASE_DIR.parent
 
-rutas = {
-    1: PROJECT_DIR / "R_referencia_1.npy",
-    2: PROJECT_DIR / "R_referencia_2.npy",
-    3: PROJECT_DIR / "R_referencia_3.npy",
-}
+# rutas = {
+#     1: PROJECT_DIR / "R_referencia_1.npy",
+#     2: PROJECT_DIR / "R_referencia_2.npy",
+#     3: PROJECT_DIR / "R_referencia_3.npy",
+# }
 
-# Selecciono la ruta según EXP
-ruta_incendio_referencia = rutas[exp]
-print(f"Leyendo mapa de incendio de referencia: {os.path.basename(ruta_incendio_referencia)}")
+# # Selecciono la ruta según EXP
+# ruta_incendio_referencia = rutas[exp]
+# print(f"Leyendo mapa de incendio de referencia: {os.path.basename(ruta_incendio_referencia)}")
 
 ############################## CARGA DE ARCHIVO PREENTRENADO ####################################
 
 archivo_preentrenado = args.pretrained
 generacion_preentranada = args.start_gen
+exp = args.exp
+ruta_incendio_referencia = args.ruta_incendio_referencia
 
 ############################## CONDICIÓN DE COURANT PARA LOS TÉRMINOS DIFUSIVOS Y ADVECTIVOS ####################################
 
@@ -79,16 +80,16 @@ elif exp == 2:
     ajustar_ignicion = True
 
     limite_ignicion = [(300, 720), (400, 800)]
-    limite_beta = [(0.1, 2.0)]
-    limite_gamma = [(0.1, 0.9)]
+    limite_beta = [(0.01, 2.0)]
+    limite_gamma = [(0.01, 0.9)]
     limite_parametros = limite_parametros_base + limite_ignicion + limite_beta + limite_gamma
 
 elif exp == 3:
     ajustar_beta_gamma = True
     ajustar_ignicion = False
 
-    limite_beta = [(0.1, 2.0)] * 5
-    limite_gamma = [(0.1, 0.9)] * 5
+    limite_beta = [(0.01, 5.0)] * 5
+    limite_gamma = [(0.01, 5.0)] * 5
     limite_parametros = limite_parametros_base + limite_beta + limite_gamma
 
     ignicion_fija_x = [1130, 1300, 620]
