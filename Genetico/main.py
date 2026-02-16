@@ -15,6 +15,7 @@ parser.add_argument("--exp", type=int, default=1, help="Número de experimento")
 parser.add_argument("--pretrained", type=str, default=None, help="Ruta al archivo preentrenado")
 parser.add_argument("--start_gen", type=int, default=0, help="Generación desde la que entrenar")
 parser.add_argument("--ruta_incendio_referencia", type=str, default=None, help="Ruta al incendio de referencia")
+parser.add_argument("--incendio_real", type=bool, default=False, help="Si se ajusta un incendio real = True")
 args = parser.parse_args()
 
 ############################## CARGADO DE MAPAS #######################################################
@@ -25,30 +26,13 @@ wy = ctx.wy
 h_dx_mapa = ctx.h_dx
 h_dy_mapa = ctx.h_dy
 
-############################## INCENDIO DE REFERENCIA ####################################################
-
-# # directorio del archivo actual (Genetico/)
-# BASE_DIR = Path(__file__).resolve().parent
-
-# # directorio padre (raíz del proyecto)
-# PROJECT_DIR = BASE_DIR.parent
-
-# rutas = {
-#     1: PROJECT_DIR / "R_referencia_1.npy",
-#     2: PROJECT_DIR / "R_referencia_2.npy",
-#     3: PROJECT_DIR / "R_referencia_3.npy",
-# }
-
-# # Selecciono la ruta según EXP
-# ruta_incendio_referencia = rutas[exp]
-# print(f"Leyendo mapa de incendio de referencia: {os.path.basename(ruta_incendio_referencia)}")
-
-############################## CARGA DE ARCHIVO PREENTRENADO ####################################
+############################## PARSEO DE PARÁMETROS ####################################
 
 archivo_preentrenado = args.pretrained
 generacion_preentranada = args.start_gen
 exp = args.exp
 ruta_incendio_referencia = args.ruta_incendio_referencia
+incendio_real = args.incendio_real
 
 ############################## CONDICIÓN DE COURANT PARA LOS TÉRMINOS DIFUSIVOS Y ADVECTIVOS ####################################
 
@@ -92,8 +76,12 @@ elif exp == 3:
     limite_gamma = [(0.01, 5.0)] * 5
     limite_parametros = limite_parametros_base + limite_beta + limite_gamma
 
-    ignicion_fija_x = [1130, 1300, 620]
-    ignicion_fija_y = [290, 150, 280]
+    if incendio_real:
+        ignicion_fija_x = [475, 565]
+        ignicion_fija_y = [550, 530]
+    else:
+        ignicion_fija_x = [1130, 1300, 620]
+        ignicion_fija_y = [290, 150, 280]
 
 else:
     raise ValueError(f"Experimento {exp} no está definido")
