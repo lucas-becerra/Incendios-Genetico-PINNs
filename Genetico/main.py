@@ -3,9 +3,7 @@ import time
 from config import d, dt, cota
 from algoritmo import genetic_algorithm
 from data_context import DataContext
-import os
 import argparse
-from pathlib import Path
 
 print(f"Placa Gráfica: {cp.cuda.runtime.getDeviceProperties(0)['name']}")
 
@@ -15,7 +13,7 @@ parser.add_argument("--exp", type=int, default=1, help="Número de experimento")
 parser.add_argument("--pretrained", type=str, default=None, help="Ruta al archivo preentrenado")
 parser.add_argument("--start_gen", type=int, default=0, help="Generación desde la que entrenar")
 parser.add_argument("--ruta_incendio_referencia", type=str, default=None, help="Ruta al incendio de referencia")
-parser.add_argument("--incendio_real", type=bool, default=False, help="Si se ajusta un incendio real = True")
+parser.add_argument("--incendio_real", action="store_true", help="Si se ajusta un incendio real = True")
 args = parser.parse_args()
 
 ############################## CARGADO DE MAPAS #######################################################
@@ -49,6 +47,8 @@ limite_parametros_base = [
 
 print(f"Corriendo el experimento {exp}")
 
+num_combustibles = 5
+
 if exp == 1:
     ajustar_beta_gamma = False
     ajustar_ignicion = True
@@ -72,8 +72,7 @@ elif exp == 3:
     ajustar_beta_gamma = True
     ajustar_ignicion = False
     
-    if incendio_real:
-        num_combustibles = 4
+    num_combustibles = 4 if incendio_real else 5
 
     limite_beta = [(0.01, 5.0)] * num_combustibles
     limite_gamma = [(0.01, 5.0)] * num_combustibles
@@ -106,7 +105,7 @@ resultados = genetic_algorithm(
     generacion_preentrenada=generacion_preentranada,
     num_steps=500,
     batch_size=5,
-    num_combustibles=5,
+    num_combustibles=num_combustibles,
     ajustar_beta_gamma=ajustar_beta_gamma,
     beta_fijo=beta_fijo if not ajustar_beta_gamma else None,
     gamma_fijo=gamma_fijo if not ajustar_beta_gamma else None,

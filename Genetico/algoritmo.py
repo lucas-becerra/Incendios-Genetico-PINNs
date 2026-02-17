@@ -58,6 +58,7 @@ class GeneticAlgorithm:
     
     def _validate_and_extract_params(self, parametros_batch):
         evaluator = self.evaluator
+        n = self.num_combustibles
         params = []
 
         if self.ajustar_beta_gamma and self.ajustar_ignicion: # Exp2
@@ -69,8 +70,8 @@ class GeneticAlgorithm:
         elif self.ajustar_beta_gamma and not self.ajustar_ignicion: # Exp3
             for genes in parametros_batch:
                 D, A, B = genes[0], genes[1], genes[2]
-                betas = genes[3:8]
-                gammas = genes[8:13]
+                betas = genes[3:3+n]
+                gammas = genes[3+n:3+2*n]
                 A, B = evaluator.validate_courant_and_adjust(A, B)
                 betas, gammas = evaluator.validate_beta_gamma(betas, gammas)
                 params.append((D, A, B, betas, gammas))
