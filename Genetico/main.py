@@ -14,6 +14,7 @@ parser.add_argument("--pretrained", type=str, default=None, help="Ruta al archiv
 parser.add_argument("--start_gen", type=int, default=0, help="Generación desde la que entrenar")
 parser.add_argument("--ruta_incendio_referencia", type=str, default=None, help="Ruta al incendio de referencia")
 parser.add_argument("--incendio_real", action="store_true", help="Si se ajusta un incendio real = True")
+parser.add_argument("--num_steps", type=int, default=500, help="Número de pasos a simular")
 args = parser.parse_args()
 
 ############################## CARGADO DE MAPAS #######################################################
@@ -31,6 +32,7 @@ generacion_preentranada = args.start_gen
 exp = args.exp
 ruta_incendio_referencia = args.ruta_incendio_referencia
 incendio_real = args.incendio_real
+num_steps = args.num_steps
 
 ############################## CONDICIÓN DE COURANT PARA LOS TÉRMINOS DIFUSIVOS Y ADVECTIVOS ####################################
 
@@ -103,7 +105,7 @@ resultados = genetic_algorithm(
     ctx=ctx,
     archivo_preentrenado=archivo_preentrenado,
     generacion_preentrenada=generacion_preentranada,
-    num_steps=500,
+    num_steps=num_steps,
     batch_size=5,
     num_combustibles=num_combustibles,
     ajustar_beta_gamma=ajustar_beta_gamma,
