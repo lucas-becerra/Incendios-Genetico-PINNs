@@ -49,6 +49,10 @@ limite_parametros_base = [
 
 print(f"Corriendo el experimento {exp}")
 
+# Configuración de tipos de vegetación
+# veg_types = None significa: detectar automáticamente los tipos presentes en ctx.vegetacion (excluyendo no-combustibles <= 2)
+# Solo especificar veg_types manualmente si necesitas un subconjunto específico diferente al del mapa
+veg_types = None
 num_combustibles = 5
 
 if exp == 1:
@@ -58,6 +62,7 @@ if exp == 1:
     limite_ignicion = [(300, 720), (400, 800)]
     limite_parametros = limite_parametros_base + limite_ignicion
 
+    # Beta y gamma fijos para cada tipo de vegetación (en orden: tipo 3, 4, 5, 6, 7)
     beta_fijo = [0.91, 0.72, 1.38, 1.94, 0.75]
     gamma_fijo = [0.5, 0.38, 0.84, 0.45, 0.14]
 
@@ -84,12 +89,25 @@ elif exp == 3:
     if incendio_real:
         ignicion_fija_x = [475, 565]
         ignicion_fija_y = [550, 530]
+        
+        # En el caso del incendio del Steffen-Martin, el incendio no pasó por zonas con bosque insertado
+        veg_types = [3, 5, 6, 7]
     else:
         ignicion_fija_x = [1130, 1300, 620]
         ignicion_fija_y = [290, 150, 280]
 
 else:
     raise ValueError(f"Experimento {exp} no está definido")
+
+# Mostrar configuración
+print(f"\n{'='*60}")
+print(f"CONFIGURACIÓN DEL EXPERIMENTO {exp}")
+print(f"{'='*60}")
+print(f"Número de combustibles: {num_combustibles}")
+print(f"Tipos de vegetación: {'Autodetección' if veg_types is None else veg_types}")
+print(f"Ajustar beta/gamma: {ajustar_beta_gamma}")
+print(f"Ajustar ignición: {ajustar_ignicion}")
+print(f"{'='*60}\n")
 
 ############################## EJECUCIÓN DEL ALGORITMO ###############################################
 
@@ -113,7 +131,8 @@ resultados = genetic_algorithm(
     gamma_fijo=gamma_fijo if not ajustar_beta_gamma else None,
     ajustar_ignicion=ajustar_ignicion,
     ignicion_fija_x=ignicion_fija_x if not ajustar_ignicion else None,
-    ignicion_fija_y=ignicion_fija_y if not ajustar_ignicion else None
+    ignicion_fija_y=ignicion_fija_y if not ajustar_ignicion else None,
+    veg_types=veg_types
 )
 
 # Sincronizar después de completar la ejecución

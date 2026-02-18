@@ -9,7 +9,7 @@ class GeneticAlgorithm:
     def __init__(self, tamano_poblacion, generaciones, limite_parametros, ruta_incendio_referencia, ctx,
                  archivo_preentrenado=None, generacion_preentrenada=0, num_steps=10000, batch_size=10, num_combustibles = 5,
                  ajustar_beta_gamma=True, beta_fijo=None, gamma_fijo=None, ajustar_ignicion=True,
-                 ignicion_fija_x=None, ignicion_fija_y=None, verbose=False):
+                 ignicion_fija_x=None, ignicion_fija_y=None, veg_types=None, verbose=False):
         
         self.tamano_poblacion = tamano_poblacion
         self.generaciones = generaciones
@@ -27,6 +27,7 @@ class GeneticAlgorithm:
         self.ajustar_ignicion=ajustar_ignicion
         self.ignicion_fija_x=ignicion_fija_x
         self.ignicion_fija_y=ignicion_fija_y
+        self.veg_types = veg_types
         self.verbose = verbose
 
         # Operadores
@@ -34,7 +35,10 @@ class GeneticAlgorithm:
         self.crossover_op = OnePointCrossover()
         self.mutation_op = GaussianMutation()
 
-        self.evaluator = FitnessEvaluator(self.ctx)
+        self.evaluator = FitnessEvaluator(self.ctx, veg_types=self.veg_types)
+        
+        if self.verbose:
+            print(f"[DEBUG] Tipos de vegetación combustible detectados: {self.evaluator.veg_types.get().tolist()}")
 
         self.incendio_referencia = leer_incendio_referencia(self.ruta_incendio_referencia)
         self.celdas_quemadas_referencia = cp.where(self.incendio_referencia > 0.001, 1, 0)
@@ -170,11 +174,11 @@ class GeneticAlgorithm:
 def genetic_algorithm(tamano_poblacion, generaciones, limite_parametros, ruta_incendio_referencia, ctx,
                  archivo_preentrenado=None, generacion_preentrenada=0, num_steps=10000, batch_size=10, num_combustibles=5,
                  ajustar_beta_gamma=True, beta_fijo=None, gamma_fijo=None, ajustar_ignicion=True,
-                 ignicion_fija_x=None, ignicion_fija_y=None, verbose=False):
+                 ignicion_fija_x=None, ignicion_fija_y=None, veg_types=None, verbose=False):
     
     ga = GeneticAlgorithm(tamano_poblacion, generaciones, limite_parametros, ruta_incendio_referencia, ctx,
                  archivo_preentrenado, generacion_preentrenada, num_steps, batch_size, num_combustibles,
                  ajustar_beta_gamma, beta_fijo, gamma_fijo, ajustar_ignicion,
-                 ignicion_fija_x, ignicion_fija_y, verbose)
+                 ignicion_fija_x, ignicion_fija_y, veg_types, verbose)
     
     return ga.run()

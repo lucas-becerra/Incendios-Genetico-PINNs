@@ -9,9 +9,27 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from modelo_rdc import spread_infection_adi, courant
 
 class FitnessEvaluator:
-    def __init__(self, ctx):
+    def __init__(self, ctx, veg_types=None):
+        """
+        Inicializa el evaluador de fitness.
+        
+        Args:
+            ctx: Contexto con datos del incendio (vegetación, viento, pendiente, etc.)
+            veg_types: Lista de tipos de vegetación combustible a considerar.
+                      Si es None (por defecto), detecta automáticamente todos los tipos
+                      presentes en ctx.vegetacion (excluyendo valores <= 2 que son no-combustibles).
+                      Si se especifica manualmente, debe coincidir con num_combustibles en Exp3.
+                      Ejemplo: [3, 4, 5, 6, 7] para todos los tipos, o [3, 5, 6, 7] si falta el tipo 4.
+        """
         self.ctx = ctx
         self.rng = cp.random.default_rng()
+        # Detectar tipos de vegetación únicos si no se especifican
+        if veg_types is None:
+            unique_veg = cp.unique(ctx.vegetacion)
+            # Filtrar valores <= 2 (no combustibles: 0=sin datos, 1=agua, 2=urbano/rocas)
+            self.veg_types = cp.sort(unique_veg[unique_veg > 2]).astype(cp.int32)
+        else:
+            self.veg_types = cp.array(veg_types, dtype=cp.int32)
 
     def validate_courant_and_adjust(self, A, B):
         """Valida la condición de Courant y ajusta parámetros si es necesario."""
@@ -58,34 +76,48 @@ class FitnessEvaluator:
 
         return beta_map, gamma_map
     
-    def _create_fuel_map(self, parametros_batch, ajustar_beta_gamma=True, beta_fijo=None, gamma_fijo=None):
+    def _create_fuel_map(self, parametros_batch, ajustar_beta_gamma=True, beta_fijo=None, gamma_fijo=None, ajustar_ignicion=True):
         """Crea mapas de beta y gamma personalizados para cada simulación en el batch
-        basados en los parámetros optimizados y el tipo de vegetación."""
+        basados en los parámetros optimizados y el tipo de vegetación.
+        
+        Args:
+            parametros_batch: Lista de parámetros para cada simulación
+                - Exp1 (not ajustar_beta_gamma): (D, A, B, x, y)
+                - Exp2 (ajustar_beta_gamma, ajustar_ignicion): (D, A, B, x, y, beta, gamma)
+                - Exp3 (ajustar_beta_gamma, not ajustar_ignicion): (D, A, B, betas_array, gammas_array)
+            ajustar_beta_gamma: Si True, usa beta/gamma de params; si False, usa beta_fijo/gamma_fijo
+            beta_fijo: Array de betas fijos para Exp1
+            gamma_fijo: Array de gammas fijos para Exp1
+            ajustar_ignicion: Si True, indica Exp2 (beta/gamma escalares); si False, Exp3 (arrays)
+        """
         batch_size = len(parametros_batch)
         vegetacion = self.ctx.vegetacion
         ny, nx = self.ctx.ny, self.ctx.nx
-    
+
         # Crear arrays de salida
         beta_batch = cp.zeros((batch_size, ny, nx), dtype=cp.float32)
         gamma_batch = cp.zeros((batch_size, ny, nx), dtype=cp.float32)
     
-        # Obtener tipos únicos de vegetación
-        veg_types = cp.array([3, 4, 5, 6, 7], dtype=cp.int32)
+        # Usar los tipos de vegetación configurados en __init__
+        veg_types = self.veg_types
     
         # Para cada simulación en el batch
         for i, params in enumerate(parametros_batch):
             # Inicializar con valores por defecto
             beta_map = cp.zeros_like(vegetacion, dtype=cp.float32)
             gamma_map = cp.zeros_like(vegetacion, dtype=cp.float32)
-            if ajustar_beta_gamma and len(params) == 7: # Exp2
+            
+            if not ajustar_beta_gamma:
+                # Exp1: Usa valores fijos
+                beta_params, gamma_params = beta_fijo, gamma_fijo
+                beta_map, gamma_map = self._apply_veg_mapping(vegetacion, beta_params, gamma_params, veg_types)
+            elif ajustar_ignicion:
+                # Exp2: Beta/gamma son escalares (params = D, A, B, x, y, beta, gamma)
                 beta_map = cp.full_like(vegetacion, params[5], dtype=cp.float32)
                 gamma_map = cp.full_like(vegetacion, params[6], dtype=cp.float32)
             else:
-                if ajustar_beta_gamma and len(params) == 5: # Exp3
-                    beta_params, gamma_params = params[3], params[4]
-                else:   # Exp1
-                    beta_params, gamma_params = beta_fijo, gamma_fijo
-            
+                # Exp3: Beta/gamma son arrays (params = D, A, B, betas_array, gammas_array)
+                beta_params, gamma_params = params[3], params[4]
                 beta_map, gamma_map = self._apply_veg_mapping(vegetacion, beta_params, gamma_params, veg_types)
         
             beta_batch[i] = beta_map
@@ -136,7 +168,8 @@ class FitnessEvaluator:
     
         # Crear mapas de parámetros de vegetación personalizados
         beta_batch, gamma_batch = self._create_fuel_map(parametros_batch, ajustar_beta_gamma=ajustar_beta_gamma,
-                                                           beta_fijo=beta_fijo, gamma_fijo=gamma_fijo)
+                                                           beta_fijo=beta_fijo, gamma_fijo=gamma_fijo,
+                                                           ajustar_ignicion=ajustar_ignicion)
 
         # Crear arrays de parámetros D, A, B para cada simulación
         D_batch = cp.array([param[0] for param in parametros_batch], dtype=cp.float32)
