@@ -9,7 +9,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from modelo_rdc import spread_infection_adi, courant
 
 class FitnessEvaluator:
-    def __init__(self, ctx, veg_types=None):
+    def __init__(self, ctx, veg_types=None, verbose=False):
         """
         Inicializa el evaluador de fitness.
         
@@ -20,9 +20,11 @@ class FitnessEvaluator:
                       presentes en ctx.vegetacion (excluyendo valores <= 2 que son no-combustibles).
                       Si se especifica manualmente, debe coincidir con num_combustibles en Exp3.
                       Ejemplo: [3, 4, 5, 6, 7] para todos los tipos, o [3, 5, 6, 7] si falta el tipo 4.
+            verbose: Si True, imprime mensajes de debug
         """
         self.ctx = ctx
         self.rng = cp.random.default_rng()
+        self.verbose = verbose
         # Detectar tipos de vegetación únicos si no se especifican
         if veg_types is None:
             unique_veg = cp.unique(ctx.vegetacion)
@@ -47,7 +49,8 @@ class FitnessEvaluator:
 
         # Evitar bucles infinitos
             if iteraciones > 100:
-                print(f"Warning: Validación Courant tomó {iteraciones} iteraciones")
+                if self.verbose:
+                    print(f"Warning: Validación Courant tomó {iteraciones} iteraciones")
                 break
         return A, B
 
@@ -143,7 +146,8 @@ class FitnessEvaluator:
         h_dy_mapa = self.ctx.h_dy
         ny, nx = self.ctx.ny, self.ctx.nx
 
-        print(f'Batch size: {batch_size}')
+        if self.verbose:
+            print(f'Batch size: {batch_size}')
     
         # Inicializar arrays para el batch
         S_batch = cp.ones((batch_size, ny, nx), dtype=cp.float32)
@@ -179,7 +183,8 @@ class FitnessEvaluator:
         # Simular en paralelo
         simulaciones_validas = cp.ones(batch_size, dtype=cp.bool_)
 
-        print(f'Numero de pasos a simular: {num_steps}')
+        if self.verbose:
+            print(f'Numero de pasos a simular: {num_steps}')
         paso_explosion = cp.full(batch_size, -1, dtype=cp.int32)  # -1 significa no explotó
     
         for t in range(num_steps):
@@ -215,7 +220,8 @@ class FitnessEvaluator:
         
             # Si todas las simulaciones explotaron, terminar
             if not cp.any(simulaciones_validas):
-                print(f"Todas las simulaciones explotaron en el paso {t+1}")
+                if self.verbose:
+                    print(f"Todas las simulaciones explotaron en el paso {t+1}")
                 break
 
         # Calcular fitness para cada simulación en paralelo

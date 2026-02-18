@@ -35,7 +35,7 @@ class GeneticAlgorithm:
         self.crossover_op = OnePointCrossover()
         self.mutation_op = GaussianMutation()
 
-        self.evaluator = FitnessEvaluator(self.ctx, veg_types=self.veg_types)
+        self.evaluator = FitnessEvaluator(self.ctx, veg_types=self.veg_types, verbose=self.verbose)
         
         if self.verbose:
             print(f"[DEBUG] Tipos de vegetación combustible detectados: {self.evaluator.veg_types.get().tolist()}")
