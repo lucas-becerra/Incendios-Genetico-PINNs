@@ -61,7 +61,7 @@ class GaussianMutation:
 
                     # Mutación gaussiana con límites
                     mutation_strength = 0.1 * (high - low)
-                    mutation = self.rng.normal(0, mutation_strength)
+                    mutation = self.rng.standard_normal(0, mutation_strength)
                     mutated.genes[i] = mutated.genes[i] + mutation
 
                     # Aplicar límites

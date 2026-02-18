@@ -122,6 +122,7 @@ class GeneticAlgorithm:
             parent2 = self.selection_op.select(poblacion)
             child1, child2 = self.crossover_op.apply(parent1, parent2)
             child1 = self.mutation_op.mutate(child1, mutation_rate, self.limite_parametros)
+            child2 = self.mutation_op.mutate(child2, mutation_rate, self.limite_parametros)
             new_population.extend([child1, child2])
         return Population(new_population, generation=poblacion.generation + 1)
     
@@ -147,8 +148,9 @@ class GeneticAlgorithm:
         mutation_rate = 0.3 * 0.99**self.generacion_preentrenada
 
         for gen in range(self.generaciones + 1):
-            if gen > 0 and self.verbose:
-                print(f"Iniciando generación {gen}...")
+            if gen > 0:
+                if self.verbose:
+                    print(f"Iniciando generación {gen}...")
                 poblacion = self.step(poblacion, mutation_rate, gen)
                 mutation_rate *= 0.99
             
