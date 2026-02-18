@@ -157,7 +157,7 @@ class GeneticAlgorithm:
 
             if self.verbose:
                 for i, ind in enumerate(poblacion.individuals, 1):
-                    print(f"Individuo {i}: {ind.as_dict(self.ajustar_beta_gamma, self.ajustar_ignicion)}")
+                    print(f"Individuo {i}: {ind.as_dict(self.ajustar_beta_gamma, self.ajustar_ignicion, self.num_combustibles)}")
             
             poblacion.guardar_resultados(resultados_dir, gen - 1 + self.generacion_preentrenada,
                                     num_combustibles=self.num_combustibles,

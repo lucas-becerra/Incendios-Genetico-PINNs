@@ -175,7 +175,7 @@ class Population:
 
             # Reformatear cada nuevo individuo con las mismas claves que los cargados
             for ind in nuevos_pop.individuals:
-                ind_dict = ind.as_dict(ajustar_beta_gamma, ajustar_ignicion)
+                ind_dict = ind.as_dict(ajustar_beta_gamma, ajustar_ignicion, num_combustibles)
                 poblacion_cargada.append(ind_dict)
 
         if verbose:
@@ -208,7 +208,7 @@ class Population:
             writer.writeheader()
         
             for individuo in self.individuals:
-                resultado = individuo.as_dict(ajustar_beta_gamma, ajustar_ignicion)
+                resultado = individuo.as_dict(ajustar_beta_gamma, ajustar_ignicion, num_combustibles)
                 row = {
                     'D': resultado['D'],
                     'A': resultado['A'],
