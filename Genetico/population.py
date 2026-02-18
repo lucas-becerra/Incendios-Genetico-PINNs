@@ -18,10 +18,11 @@ class Population:
         Returns:
             Lista de individuos (cada individuo es una instancia de Individual)
         """
+        rng = cp.random.default_rng()
         n_params = len(limite_parametros)
     
         # Genera números aleatorios uniformes en [0,1]
-        rand = cp.random.rand(size, n_params, dtype=cp.float32)
+        rand = rng.random((size, n_params), dtype=cp.float32)
     
         # Convierte límites a arrays
         lows  = cp.array([low for low, _ in limite_parametros], dtype=cp.float32)
@@ -163,7 +164,8 @@ class Population:
         if num_cargados > tamano_poblacion:
             if verbose:
                 print(f"[DEBUG] Se cargaron {num_cargados}, recortando a {tamano_poblacion}")
-            indices = cp.random.choice(num_cargados, tamano_poblacion, replace=False)
+            rng = cp.random.default_rng()
+            indices = rng.choice(num_cargados, tamano_poblacion, replace=False)
             poblacion_cargada = [poblacion_cargada[i] for i in indices.get()]
         elif num_cargados < tamano_poblacion:
             faltantes = tamano_poblacion - num_cargados

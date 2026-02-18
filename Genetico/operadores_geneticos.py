@@ -17,7 +17,7 @@ class TournamentSelection:
 
 class OnePointCrossover:
     def __init__(self):
-        pass
+        self.rng = cp.random.default_rng()
 
     def apply(self, parent1, parent2):
         """Realiza un cruce de un solo punto entre dos padres"""
@@ -25,7 +25,7 @@ class OnePointCrossover:
         min_length = min(len(parent1), len(parent2))
 
         # Punto de cruce aleatorio (evitar los extremos)
-        point = int(cp.random.randint(1, min_length))
+        point = int(self.rng.integers(1, min_length))
 
         # Crear hijos intercambiando segmentos
         child1_genes = cp.concatenate((parent1.genes[:point], parent2.genes[point:min_length]))
@@ -46,7 +46,7 @@ class OnePointCrossover:
 
 class GaussianMutation:
     def __init__(self):
-        pass
+        self.rng = cp.random.default_rng()
     
     def mutate(self, individual, mutation_rate, param_bounds):
         """Aplica una mutación aleatoria a los parámetros con una tasa dada"""
@@ -55,19 +55,19 @@ class GaussianMutation:
 
         # Aplicar mutación a cada parámetro
         for i in range(len(mutated)):
-            if cp.random.rand() < mutation_rate:
+            if self.rng.random() < mutation_rate:
                 if i < len(param_bounds):
                     low, high = param_bounds[i]
 
                     # Mutación gaussiana con límites
                     mutation_strength = 0.1 * (high - low)
-                    mutation = cp.random.normal(0, mutation_strength)
+                    mutation = self.rng.normal(0, mutation_strength)
                     mutated.genes[i] = mutated.genes[i] + mutation
 
                     # Aplicar límites
                     mutated.genes[i] = cp.clip(mutated.genes[i], low, high)
                 else:
                     # Si no hay límites definidos, mutación pequeña
-                    mutated.genes[i] += cp.random.uniform(-0.01, 0.01)
+                    mutated.genes[i] += self.rng.uniform(-0.01, 0.01)
 
         return mutated

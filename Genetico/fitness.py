@@ -11,6 +11,7 @@ from modelo_rdc import spread_infection_adi, courant
 class FitnessEvaluator:
     def __init__(self, ctx):
         self.ctx = ctx
+        self.rng = cp.random.default_rng()
 
     def validate_courant_and_adjust(self, A, B):
         """Valida la condición de Courant y ajusta parámetros si es necesario."""
@@ -19,12 +20,12 @@ class FitnessEvaluator:
         while not courant(dt/2, A, B, d, self.ctx.wx, self.ctx.wy, h_dx=self.ctx.h_dx, h_dy=self.ctx.h_dy):
             iteraciones += 1
             # Alternativa más eficiente: seleccionar aleatoriamente entre 0, 1
-            param_idx = int(cp.random.randint(0, 2))  # 0, 1
+            param_idx = int(self.rng.integers(0, 2))  # 0, 1
 
             if param_idx == 0:  # A
-                A = cp.array(A * float(cp.random.uniform(0.8, 0.99)), dtype=cp.float32)
+                A = cp.array(A * float(self.rng.uniform(0.8, 0.99)), dtype=cp.float32)
             elif param_idx == 1:  # B
-                B = cp.array(B * float(cp.random.uniform(0.8, 0.99)), dtype=cp.float32)
+                B = cp.array(B * float(self.rng.uniform(0.8, 0.99)), dtype=cp.float32)
 
         # Evitar bucles infinitos
             if iteraciones > 100:
@@ -36,7 +37,7 @@ class FitnessEvaluator:
         """Valida que el punto de ignición tenga combustible o que esté en el incendio de referencia."""
         lim_x, lim_y = limite_parametros[3], limite_parametros[4]
         while self.ctx.vegetacion[int(y), int(x)] <= 2 or incendio_referencia[int(y), int(x)] <= 0.001:
-            x, y = float(cp.random.randint(lim_x[0], lim_x[1])), float(cp.random.randint(lim_y[0], lim_y[1]))
+            x, y = float(self.rng.integers(lim_x[0], lim_x[1])), float(self.rng.integers(lim_y[0], lim_y[1]))
         return x, y
 
     def validate_beta_gamma(self, betas, gammas):
