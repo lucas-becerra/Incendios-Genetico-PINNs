@@ -17,6 +17,7 @@ parser.add_argument("--incendio_real", action="store_true", help="Si se ajusta u
 parser.add_argument("--num_steps", type=int, default=500, help="Número de pasos a simular")
 parser.add_argument("--tamano_poblacion", type=int, default=10000, help="Tamaño de la población")
 parser.add_argument("--num_generaciones", type=int, default=20, help="Número de generaciones a ejecutar por el AG")
+parser.add_argument("--batch_size", type=int, default=5, help="Tamaño del batch, número de simulaciones realizadas en simultáneo")
 args = parser.parse_args()
 
 ############################## CARGADO DE MAPAS #######################################################
@@ -37,6 +38,7 @@ incendio_real = args.incendio_real
 num_steps = args.num_steps
 tamano_poblacion = args.tamano_poblacion
 generaciones = args.num_generaciones
+batch_size = args.batch_size 
 
 ############################## CONDICIÓN DE COURANT PARA LOS TÉRMINOS DIFUSIVOS Y ADVECTIVOS ####################################
 
@@ -109,6 +111,10 @@ print(f"Número de combustibles: {num_combustibles}")
 print(f"Tipos de vegetación: {'Autodetección' if veg_types is None else veg_types}")
 print(f"Ajustar beta/gamma: {ajustar_beta_gamma}")
 print(f"Ajustar ignición: {ajustar_ignicion}")
+print(f"Tamaño del batch: {batch_size}")
+print(f"Número de pasos a simular: {num_steps}")
+print(f"Tamaño de la población en individuos: {tamano_poblacion}")
+print(f"Número de generaciones a ejecutar: {generaciones}")
 print(f"{'='*60}\n")
 
 ############################## EJECUCIÓN DEL ALGORITMO ###############################################
@@ -118,15 +124,15 @@ cp.cuda.Stream.null.synchronize()
 start_time = time.time()
 
 resultados = genetic_algorithm(
-    tamano_poblacion=10,
-    generaciones=10,
+    tamano_poblacion=tamano_poblacion,
+    generaciones=generaciones,
     limite_parametros=limite_parametros,
     ruta_incendio_referencia=ruta_incendio_referencia,
     ctx=ctx,
     archivo_preentrenado=archivo_preentrenado,
     generacion_preentrenada=generacion_preentranada,
     num_steps=num_steps,
-    batch_size=5,
+    batch_size=batch_size,
     num_combustibles=num_combustibles,
     ajustar_beta_gamma=ajustar_beta_gamma,
     beta_fijo=beta_fijo if not ajustar_beta_gamma else None,
