@@ -15,6 +15,8 @@ parser.add_argument("--start_gen", type=int, default=0, help="Generación desde 
 parser.add_argument("--ruta_incendio_referencia", type=str, default=None, help="Ruta al incendio de referencia")
 parser.add_argument("--incendio_real", action="store_true", help="Si se ajusta un incendio real = True")
 parser.add_argument("--num_steps", type=int, default=500, help="Número de pasos a simular")
+parser.add_argument("--tamano_poblacion", type=int, default=10000, help="Tamaño de la población")
+parser.add_argument("--num_generaciones", type=int, default=20, help="Número de generaciones a ejecutar por el AG")
 args = parser.parse_args()
 
 ############################## CARGADO DE MAPAS #######################################################
@@ -33,6 +35,8 @@ exp = args.exp
 ruta_incendio_referencia = args.ruta_incendio_referencia
 incendio_real = args.incendio_real
 num_steps = args.num_steps
+tamano_poblacion = args.tamano_poblacion
+generaciones = args.num_generaciones
 
 ############################## CONDICIÓN DE COURANT PARA LOS TÉRMINOS DIFUSIVOS Y ADVECTIVOS ####################################
 
@@ -50,8 +54,6 @@ limite_parametros_base = [
 print(f"Corriendo el experimento {exp}")
 
 # Configuración de tipos de vegetación
-# veg_types = None significa: detectar automáticamente los tipos presentes en ctx.vegetacion (excluyendo no-combustibles <= 2)
-# Solo especificar veg_types manualmente si necesitas un subconjunto específico diferente al del mapa
 veg_types = None
 num_combustibles = 5
 
