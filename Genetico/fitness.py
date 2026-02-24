@@ -9,7 +9,8 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from modelo_rdc import spread_infection_adi, courant
 
 class FitnessEvaluator:
-    def __init__(self, ctx, veg_types=None, verbose=False):
+    def __init__(self, ctx, veg_types=None, verbose=False,
+                 nan_check_interval=10, rescue_max_retries=3, gamma_reduction_factor=0.9):
         """
         Inicializa el evaluador de fitness.
         
@@ -25,6 +26,10 @@ class FitnessEvaluator:
         self.ctx = ctx
         self.rng = cp.random.default_rng()
         self.verbose = verbose
+        self.nan_check_interval = nan_check_interval
+        self.rescue_max_retries = rescue_max_retries
+        self.gamma_reduction_factor = gamma_reduction_factor
+
         # Detectar tipos de vegetación únicos si no se especifican
         if veg_types is None:
             unique_veg = cp.unique(ctx.vegetacion)
@@ -66,6 +71,10 @@ class FitnessEvaluator:
         mask = gammas >= betas
         gammas[mask] = 0.9 * betas[mask]
         return betas, gammas
+    
+    def _reduce_max_gamma(self, gamma_map, factor):
+        """Reduce todos los gammas multiplicando por factor (más efectivo para prevenir NaN)"""
+        return gamma_map * factor
     
     def _apply_veg_mapping(self, vegetacion, beta_params, gamma_params, veg_types):
         beta_map = cp.zeros_like(vegetacion, dtype=cp.float32)
@@ -134,6 +143,46 @@ class FitnessEvaluator:
 
         return beta_batch, gamma_batch
     
+    def _simulate_single_with_maps(self, beta_map, gamma_map, x, y, num_steps, D, A, B):
+        vegetacion = self.ctx.vegetacion
+        wx, wy = self.ctx.wx, self.ctx.wy
+        h_dx_mapa, h_dy_mapa = self.ctx.h_dx, self.ctx.h_dy
+        ny, nx = self.ctx.ny, self.ctx.nx
+
+        S = cp.ones((1, ny, nx), dtype=cp.float32)
+        I = cp.zeros_like(S)
+        R = cp.zeros_like(S)
+        S[0, y, x] = 0
+        I[0, y, x] = 1
+
+        S_new = cp.empty_like(S)
+        I_new = cp.empty_like(S)
+        R_new = cp.empty_like(S)
+
+        beta_b = beta_map[cp.newaxis, :, :]
+        gamma_b = gamma_map[cp.newaxis, :, :]
+        D_b = cp.array([D], dtype=cp.float32)
+        A_b = cp.array([A], dtype=cp.float32)
+        B_b = cp.array([B], dtype=cp.float32)
+
+        for t in range(num_steps):
+            spread_infection_adi(
+                S=S, I=I, R=R, S_new=S_new, I_new=I_new, R_new=R_new, 
+                dt=dt, d=d, beta=beta_b, gamma=gamma_b, D=D_b,
+                wx=wx, wy=wy, h_dx=h_dx_mapa, h_dy=h_dy_mapa, 
+                A=A_b, B=B_b, vegetacion=vegetacion
+            )
+
+            S, S_new = S_new, S
+            I, I_new = I_new, I
+            R, R_new = R_new, R
+
+            if (t + 1) % self.nan_check_interval == 0 or (t + 1) == num_steps:
+                if not bool(cp.all(cp.isfinite(S) & cp.isfinite(I) & cp.isfinite(R)).item()):
+                    return None # falló por NaN/Inf
+        
+        return R[0]
+    
     def evaluate_batch(self, parametros_batch, burnt_cells, num_steps=10000, ajustar_beta_gamma=True, beta_fijo=None, gamma_fijo=None,
                   ajustar_ignicion=True, ignicion_fija_x=None, ignicion_fija_y=None):
         """Calcula el fitness para múltiples combinaciones de parámetros en paralelo."""
@@ -185,7 +234,6 @@ class FitnessEvaluator:
 
         if self.verbose:
             print(f'Numero de pasos a simular: {num_steps}')
-        paso_explosion = cp.full(batch_size, -1, dtype=cp.int32)  # -1 significa no explotó
     
         for t in range(num_steps):
             # Llamar al kernel con todos los parámetros necesarios
@@ -202,27 +250,10 @@ class FitnessEvaluator:
             I_batch, I_new_batch = I_new_batch, I_batch
             R_batch, R_new_batch = R_new_batch, R_batch
         
-            # Verificar si alguna simulación explota
-            # Condiciones más estrictas para detectar problemas temprano
-            validas = cp.all((R_batch >= -1e-6) & (R_batch <= 1 + 1e-6) & 
-                            (I_batch >= -1e-6) & (I_batch <= 1 + 1e-6) &
-                            (S_batch >= -1e-6) & (S_batch <= 1 + 1e-6), axis=(1, 2))
-        
-            # Detectar valores extremos que pueden causar problemas
-            valores_extremos = cp.any((R_batch > 10) | (R_batch < -10), axis=(1, 2))
-        
-            # Registrar el paso de explosión para simulaciones que acaban de explotar
-            nuevas_explosiones = simulaciones_validas & (~validas | valores_extremos)
-            paso_explosion = cp.where(nuevas_explosiones, t + 1, paso_explosion)
-        
-            # Actualizar estado de validez
-            simulaciones_validas &= validas & (~valores_extremos)
-        
-            # Si todas las simulaciones explotaron, terminar
-            if not cp.any(simulaciones_validas):
-                if self.verbose:
-                    print(f"Todas las simulaciones explotaron en el paso {t+1}")
-                break
+            # Las simulaciones son válidas si no tiene valores NaN
+            if (t + 1) % self.nan_check_interval == 0 or (t + 1) == num_steps:
+                finite_ok = cp.all(cp.isfinite(S_batch) & cp.isfinite(I_batch) & cp.isfinite(R_batch), axis=(1,2))
+                simulaciones_validas &= finite_ok
 
         # Calcular fitness para cada simulación en paralelo
         fitness_values = []
@@ -244,5 +275,58 @@ class FitnessEvaluator:
         # Procesar resultados
         for i in range(batch_size):
             fitness_values.append(float(fitness_batch[i]))
+
+        # Identificamos las simulaciones que fallaron
+        failed_idx = cp.where(~simulaciones_validas)[0]
+        
+        if self.verbose and len(failed_idx) > 0:
+            print(f"[RESCUE] Detectadas {len(failed_idx)} simulaciones fallidas con NaN/Inf")
+            print(f"[RESCUE] Índices: {failed_idx.tolist()}")
+
+        for i in failed_idx.tolist():
+            if ajustar_ignicion:
+                x, y = int(parametros_batch[i][3]), int(parametros_batch[i][4])
+            else:
+                x, y = ignicion_fija_x, ignicion_fija_y
+
+            if self.verbose:
+                print(f"[RESCUE] Simulación {i}: Intentando rescatar (D={parametros_batch[i][0]:.4f}, A={parametros_batch[i][1]:.6f}, B={parametros_batch[i][2]:.4f})")
+
+            gamma_try = gamma_batch[i].copy()
+            rescued = False
+
+            for retry_num in range(self.rescue_max_retries):
+                gamma_try = self._reduce_max_gamma(gamma_try, self.gamma_reduction_factor)
+                
+                if self.verbose:
+                    gamma_max_val = float(cp.max(gamma_try))
+                    print(f"  [RESCUE] Intento {retry_num + 1}/{self.rescue_max_retries}: gamma_max = {gamma_max_val:.6f}")
+                
+                R_ok = self._simulate_single_with_maps(
+                    beta_map=beta_batch[i], gamma_map=gamma_try, x=x, y=y, num_steps=num_steps,
+                    D=parametros_batch[i][0], A=parametros_batch[i][1], B=parametros_batch[i][2]
+                )
+
+                if R_ok is not None:
+                    burnt_sim = (R_ok > 0.001)
+                    union = cp.sum(burnt_cells | burnt_sim)
+                    inter = cp.sum(burnt_cells & burnt_sim)
+                    fitness_values[i] = float((union - inter) / cp.sum(burnt_cells))
+                    rescued = True
+                    
+                    if self.verbose:
+                        print(f"  [RESCUE] Éxito en intento {retry_num + 1}! Fitness = {fitness_values[i]:.6f}")
+                    break
+            
+            if not rescued:
+                fitness_values[i] = float("inf")
+                if self.verbose:
+                    print(f"[RESCUE] Simulación {i}: Fracaso después de {self.rescue_max_retries} intentos. Fitness = inf")
+        
+        # Estadísticas finales de rescate
+        if self.verbose and len(failed_idx) > 0:
+            rescatadas = sum(1 for i in failed_idx.tolist() if fitness_values[i] != float("inf"))
+            no_rescatadas = len(failed_idx) - rescatadas
+            print(f"[RESCUE] Resumen: {rescatadas}/{len(failed_idx)} simulaciones rescatadas, {no_rescatadas} sin resolver")
 
         return fitness_values

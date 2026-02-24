@@ -18,6 +18,7 @@ parser.add_argument("--num_steps", type=int, default=500, help="Número de pasos
 parser.add_argument("--tamano_poblacion", type=int, default=10000, help="Tamaño de la población")
 parser.add_argument("--num_generaciones", type=int, default=20, help="Número de generaciones a ejecutar por el AG")
 parser.add_argument("--batch_size", type=int, default=5, help="Tamaño del batch, número de simulaciones realizadas en simultáneo")
+parser.add_argument("--verbose", action="store_true", help="Mostrar mensajes de depuración durante la ejecución")
 args = parser.parse_args()
 
 ############################## CARGADO DE MAPAS #######################################################
@@ -38,7 +39,8 @@ incendio_real = args.incendio_real
 num_steps = args.num_steps
 tamano_poblacion = args.tamano_poblacion
 generaciones = args.num_generaciones
-batch_size = args.batch_size 
+batch_size = args.batch_size
+verbose = args.verbose 
 
 ############################## CONDICIÓN DE COURANT PARA LOS TÉRMINOS DIFUSIVOS Y ADVECTIVOS ####################################
 
@@ -140,7 +142,8 @@ resultados = genetic_algorithm(
     ajustar_ignicion=ajustar_ignicion,
     ignicion_fija_x=ignicion_fija_x if not ajustar_ignicion else None,
     ignicion_fija_y=ignicion_fija_y if not ajustar_ignicion else None,
-    veg_types=veg_types
+    veg_types=veg_types,
+    verbose=verbose
 )
 
 # Sincronizar después de completar la ejecución
