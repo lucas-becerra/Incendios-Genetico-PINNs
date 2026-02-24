@@ -198,3 +198,5 @@ PINNS/Resultados
 PINNS/pinns_sir_1d.py
 PINNS/train_pinn_1d.py
 Genetico/run_local.bat
+run_fuego_referencia.bat
+.vscode/settings.json
