@@ -50,9 +50,9 @@ B_max = float(d / (cp.sqrt(2)*dt/2*cp.max(cp.sqrt(h_dx_mapa**2+h_dy_mapa**2)))) 
 ############################## DISEÑO DE EXPERIMENTOS ##########################################
 
 limite_parametros_base = [
-    (0.01, 100.0),          # D
-    (0.0, A_max * cota),    # A
-    (0.0, B_max * cota)     # B
+    (1e-7, 100.0),          # D
+    (1e-7, A_max * cota),    # A
+    (1e-7, B_max * cota)     # B
 ]
 
 print(f"Corriendo el experimento {exp}")
@@ -77,8 +77,8 @@ elif exp == 2:
     ajustar_ignicion = True
 
     limite_ignicion = [(300, 720), (400, 800)]
-    limite_beta = [(0.01, 2.0)]
-    limite_gamma = [(0.01, 0.9)]
+    limite_beta = [(1e-7, 2.0)] * num_combustibles
+    limite_gamma = [(1e-7, 0.9)] * num_combustibles
     limite_parametros = limite_parametros_base + limite_ignicion + limite_beta + limite_gamma
 
 elif exp == 3:
@@ -87,8 +87,8 @@ elif exp == 3:
     
     num_combustibles = 4 if incendio_real else 5
 
-    limite_beta = [(0.01, 5.0)] * num_combustibles
-    limite_gamma = [(0.01, 5.0)] * num_combustibles
+    limite_beta = [(1e-7, 5.0)] * num_combustibles
+    limite_gamma = [(1e-7, 5.0)] * num_combustibles
     
     limite_parametros = limite_parametros_base + limite_beta + limite_gamma
 
